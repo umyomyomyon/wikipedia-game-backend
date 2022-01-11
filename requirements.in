@@ -1,0 +1,7 @@
+Flask
+beautifulsoup4
+firebase-admin
+pytest
+flask-cors
+gunicorn
+google-cloud-logging
