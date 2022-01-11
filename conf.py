@@ -20,7 +20,7 @@ RTDB_URL = os.getenv('RTDB_URL')
 
 CORS_WHITELIST = [
     'http://localhost:3000',
-    'https://wikipedia-game-16fc7.web.app/'
+    'https://wikipedia-game-16fc7.web.app'
 ]
 
 if FIREBASE_CRED_PATH:
