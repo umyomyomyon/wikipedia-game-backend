@@ -5,7 +5,6 @@ from rooms import (create_room_id, init_room, _join_room, setting_article, chang
                    get_room_users, is_all_room_users_done)
 from firestore import (record_player_progress, cancel_player_progress, record_game_result,
                        delete_all_document_in_collection)
-from validation import validate_urls
 from exceptions import (RoomNotExistException, RoomIdDuplicateException, URLValidationException, NotInRoomUserException,
                         NotHostException)
 from conf import CORS_WHITELIST, fs, logging_client, resource
