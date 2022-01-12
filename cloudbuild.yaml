@@ -6,6 +6,7 @@ steps:
     args: ['push', 'gcr.io/wikipedia-game-16fc7/wikipedia-game']
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
     args:
       - run
       - deploy
