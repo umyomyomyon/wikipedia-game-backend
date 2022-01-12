@@ -8,6 +8,11 @@ class RoomNotExistException(Exception):
     message = 'room not exists.'
 
 
+class RoomAlreadyClosedException(Exception):
+    status_code = 403
+    message = 'room already closed.'
+
+
 class URLValidationException(Exception):
     status_code = 400
     message = None

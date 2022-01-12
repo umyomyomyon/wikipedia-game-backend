@@ -2,7 +2,7 @@ from random import randint
 
 from firebase_admin import db
 
-from exceptions import RoomIdDuplicateException, RoomNotExistException, NotInRoomUserException, NotHostException
+from exceptions import RoomIdDuplicateException, RoomNotExistException, NotHostException, RoomAlreadyClosedException
 from conf import MIN_ROOM_ID, MAX_ROOM_ID, RoomStatuses
 
 # roomのデータ構造
@@ -21,6 +21,14 @@ def check_room_exists(room_id: int, return_ref=False):
     if return_ref:
         return bool(ref.get()), ref
     return bool(ref.get())
+
+
+def check_room_closed(room_id: int):
+    ref = db.reference(f'{room_id}/')
+    data = ref.get()
+    status = data.get('status')
+    is_room_closed = status == RoomStatuses.ENDED
+    return is_room_closed
 
 
 def create_room_id():
@@ -66,6 +74,9 @@ def _join_room(room_id: int, user_uuid: str, user_name: str):
     is_room_exists = check_room_exists(room_id)
     if not is_room_exists:
         raise RoomNotExistException
+    is_room_closed = check_room_closed(room_id)
+    if is_room_closed:
+        raise RoomAlreadyClosedException
     room_users_ref = db.reference(f'{room_id}/users/')
     current_users = room_users_ref.get()
     room_users_ref.set(current_users | {user_uuid: {'name': user_name, 'isDone': False}})

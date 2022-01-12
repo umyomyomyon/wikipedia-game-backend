@@ -2,8 +2,8 @@ import pytest
 from firebase_admin import db
 
 from rooms import (check_room_exists, init_room, _destroy_room, _join_room, setting_article, change_player_progress,
-                   change_room_status, is_all_room_users_done, get_room_users)
-from exceptions import RoomNotExistException, NotInRoomUserException, NotHostException
+                   change_room_status, is_all_room_users_done, get_room_users, check_room_closed)
+from exceptions import RoomNotExistException, NotInRoomUserException, NotHostException, RoomAlreadyClosedException
 from conf import RoomStatuses
 
 
@@ -69,6 +69,23 @@ def test_check_room_exists():
     assert result is True
 
 
+@room_decorator(10010)
+def test_check_room_closed():
+    room_id = 10010
+    is_room_closed = check_room_closed(room_id)
+    assert is_room_closed is False
+
+
+@room_decorator(10011)
+def test_check_room_closed_already_ended():
+    room_id = 10011
+    ref = db.reference(f'{room_id}/')
+    ref.set({'status': RoomStatuses.ENDED})
+
+    is_room_closed = check_room_closed(room_id)
+    assert is_room_closed is True
+
+
 @room_decorator(20000)
 def test_join_room():
     room_id = 20000
@@ -90,6 +107,20 @@ def test_join_room_failed():
         room_id = 20001
         user_uuid = 'test_user_uuid'
         user_name = 'test_user_name'
+        _join_room(room_id, user_uuid, user_name)
+
+
+@room_decorator(20010)
+def test_join_room_already_closed():
+    room_id = 20010
+    user_uuid = 'test_user_uuid'
+    user_name = 'test_user_name'
+
+    # change room status to ENDED
+    db_path = f'{room_id}/'
+    ref = db.reference(db_path)
+    ref.update({'status': RoomStatuses.ENDED})
+    with pytest.raises(RoomAlreadyClosedException):
         _join_room(room_id, user_uuid, user_name)
 
 
