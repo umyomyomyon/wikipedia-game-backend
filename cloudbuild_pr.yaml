@@ -1,0 +1,3 @@
+steps:
+  - name: 'python:3.9-slim'
+    args: ['bash', '-c' , 'pip install -r requirements.txt && pytest -v']
