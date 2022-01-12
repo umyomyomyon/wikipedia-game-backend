@@ -16,11 +16,24 @@ from conf import MIN_ROOM_ID, MAX_ROOM_ID, RoomStatuses
 # }
 
 
-def check_room_exists(room_id: int, return_ref=False):
-    ref = db.reference(f'{room_id}/')
-    if return_ref:
-        return bool(ref.get()), ref
-    return bool(ref.get())
+class RoomValidator:
+    room_ref = None
+
+    def __init__(self, room_id: int):
+        room_path = f'{room_id}/'
+        self.room_ref = db.reference(room_path)
+
+    def check_room_exists(self):
+        is_room_exists = bool(self.room_ref.get())
+        if not is_room_exists:
+            raise RoomNotExistException
+
+    def check_room_closed(self):
+        data = self.room_ref.get()
+        status = data.get('status')
+        is_room_closed = status == RoomStatuses.ENDED
+        if is_room_closed:
+            raise RoomAlreadyClosedException
 
 
 def check_room_closed(room_id: int):
@@ -32,18 +45,18 @@ def check_room_closed(room_id: int):
 
 
 def create_room_id():
-    room_id = None
-    is_room_already_exists = False
-    retry_count = 0
-    while retry_count < 5:
-        room_id = randint(MIN_ROOM_ID, MAX_ROOM_ID)
-        is_room_already_exists = check_room_exists(room_id)
-        if not is_room_already_exists:
-            break
-        retry_count += 1
-    if is_room_already_exists:
-        raise RoomIdDuplicateException
-    return room_id
+    max_retry_count = 5
+    room_ids = [randint(MIN_ROOM_ID, MAX_ROOM_ID) for _ in range(max_retry_count)]
+    # forループの中でRoomValidatorをインスタンス化しているのは良くないが、ほとんど1度目の処理で終わるので良しとする
+    # (2週目、３週目に行くことはほぼ無い)
+    for room_id in room_ids:
+        try:
+            rv = RoomValidator(room_id)
+            rv.check_room_exists()
+            continue
+        except RoomNotExistException:
+            return room_id
+    raise RoomIdDuplicateException
 
 
 def get_room_data(room_id: int):
@@ -71,21 +84,18 @@ def init_room(room_id: int, user_uuid: str, user_name: str):
 
 
 def _join_room(room_id: int, user_uuid: str, user_name: str):
-    is_room_exists = check_room_exists(room_id)
-    if not is_room_exists:
-        raise RoomNotExistException
-    is_room_closed = check_room_closed(room_id)
-    if is_room_closed:
-        raise RoomAlreadyClosedException
+    rv = RoomValidator(room_id)
+    rv.check_room_exists()
+    rv.check_room_closed()
     room_users_ref = db.reference(f'{room_id}/users/')
     current_users = room_users_ref.get()
     room_users_ref.set(current_users | {user_uuid: {'name': user_name, 'isDone': False}})
 
 
 def change_room_status(room_id: int, user_uuid: str, start=True, force_change=False):
-    is_room_exists, room_ref = check_room_exists(room_id, return_ref=True)
-    if not is_room_exists:
-        raise RoomNotExistException
+    rv = RoomValidator(room_id)
+    rv.check_room_exists()
+    room_ref = rv.room_ref
 
     if not force_change:
         room_data = get_room_data(room_id)
@@ -100,25 +110,23 @@ def change_room_status(room_id: int, user_uuid: str, start=True, force_change=Fa
 
 
 def _destroy_room(room_id: int):
-    is_exists_room_id, ref = check_room_exists(room_id, return_ref=True)
-    if not is_exists_room_id:
-        raise RoomNotExistException
+    rv = RoomValidator(room_id)
+    rv.check_room_exists()
+    ref = rv.room_ref
     ref.delete()
 
 
 def setting_article(room_id: int, url: str, is_start: bool):
-    is_room_exists = check_room_exists(room_id)
-    if not is_room_exists:
-        raise RoomNotExistException
+    rv = RoomValidator(room_id)
+    rv.check_room_exists()
     target = 'start' if is_start else 'goal'
     ref = db.reference(f'{room_id}/{target}/')
     ref.set(url)
 
 
 def change_player_progress(room_id: int, uuid: str, is_done: bool):
-    is_room_exists = check_room_exists(room_id)
-    if not is_room_exists:
-        raise RoomNotExistException
+    rv = RoomValidator(room_id)
+    rv.check_room_exists()
     ref = db.reference(f'{room_id}/users/{uuid}/')
     player_data = ref.get()
     player_data['isDone'] = is_done
