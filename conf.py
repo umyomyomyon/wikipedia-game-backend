@@ -18,9 +18,10 @@ MAX_ROOM_ID = 99999
 FIREBASE_CRED_PATH = os.getenv('FIREBASE_CRED_PATH')
 RTDB_URL = os.getenv('RTDB_URL')
 
+FRONTEND_REGEX = r'https:\/\/wikipedia-game-16fc7(--pr.*\.web\.app|\.(web|firebaseapp)\.(app|com))'
 CORS_WHITELIST = [
     'http://localhost:3000',
-    r'https:\/\/wikipedia-game-16fc7\..*\.(app|com)'
+    FRONTEND_REGEX
 ]
 
 if FIREBASE_CRED_PATH:
