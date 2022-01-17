@@ -34,11 +34,13 @@ def delete_all_document_in_collection(collection_ref):
         doc.reference.delete()
 
 
-def record_player_progress(room_id: int, uuid: str, name: str, urls: List[str]):
+def record_player_progress(room_id: int, uuid: str, name: str, urls: List[str], is_surrendered: bool):
+    _urls = urls if not is_surrendered else []
     ref = fs.collection('progress').document(str(room_id)).collection('users').document(uuid)
     ref.set({
         'name': name,
-        'urls': urls
+        'urls': _urls,
+        'isSurrendered': is_surrendered
     })
 
 
@@ -53,7 +55,11 @@ def get_all_player_progresses(room_id: int):
     progresses = []
     for doc in docs:
         data = doc.to_dict()
-        progresses.append({'uuid': doc.id, 'name': data['name'], 'urls': data['urls']})
+        progresses.append({'uuid': doc.id,
+                           'name': data['name'],
+                           'urls': data['urls'],
+                           'isSurrendered': data['isSurrendered']
+                           })
     return progresses
 
 

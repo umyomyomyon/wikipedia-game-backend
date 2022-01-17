@@ -76,7 +76,8 @@ def init_room(room_id: int, user_uuid: str, user_name: str):
         'users': {
             user_uuid: {
                 'name': user_name,
-                'isDone': False
+                'isDone': False,
+                'isSurrendered': False
             }
         },
         'host': user_uuid
@@ -89,7 +90,7 @@ def _join_room(room_id: int, user_uuid: str, user_name: str):
     rv.check_room_closed()
     room_users_ref = db.reference(f'{room_id}/users/')
     current_users = room_users_ref.get()
-    room_users_ref.set(current_users | {user_uuid: {'name': user_name, 'isDone': False}})
+    room_users_ref.set(current_users | {user_uuid: {'name': user_name, 'isDone': False, 'isSurrendered': False}})
 
 
 def change_room_status(room_id: int, user_uuid: str, start=True, force_change=False):
@@ -124,12 +125,13 @@ def setting_article(room_id: int, url: str, is_start: bool):
     ref.set(url)
 
 
-def change_player_progress(room_id: int, uuid: str, is_done: bool):
+def change_player_progress(room_id: int, uuid: str, is_done: bool, is_surrendered: bool):
     rv = RoomValidator(room_id)
     rv.check_room_exists()
     ref = db.reference(f'{room_id}/users/{uuid}/')
     player_data = ref.get()
     player_data['isDone'] = is_done
+    player_data['isSurrendered'] = is_surrendered
     ref.set(player_data)
 
 

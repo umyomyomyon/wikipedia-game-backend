@@ -18,7 +18,8 @@ def test_init_room():
         'users': {
             user_uuid: {
                 'name': user_name,
-                'isDone': False
+                'isDone': False,
+                'isSurrendered': False
             }
         },
         'host': user_uuid
@@ -105,7 +106,8 @@ def test_join_room():
     user_name = 'join_user_name'
     expected_data = {
         'name': user_name,
-        'isDone': False
+        'isDone': False,
+        'isSurrendered': False
     }
     _join_room(room_id, user_uuid, user_name)
 
@@ -192,7 +194,8 @@ def test_setting_start_article():
         'users': {
             'test_user_uuid': {
                 'name': 'test_user_name',
-                'isDone': False
+                'isDone': False,
+                'isSurrendered': False
             }
         },
         'host': 'test_user_uuid',
@@ -215,7 +218,8 @@ def test_setting_goal_article():
         'users': {
             'test_user_uuid': {
                 'name': 'test_user_name',
-                'isDone': False
+                'isDone': False,
+                'isSurrendered': False
             }
         },
         'host': 'test_user_uuid',
@@ -237,14 +241,15 @@ def test_change_player_progress():
     user_uuid = 'test_user_uuid'
     user_name = 'test_user_name'
     is_done = True
-    expected_data = {
-        'name': user_name,
-        'isDone': True
-    }
-    change_player_progress(room_id, user_uuid, is_done)
+    is_surrendered = False
+    change_player_progress(room_id, user_uuid, is_done, is_surrendered)
 
     result = db.reference(f'{room_id}/users/{user_uuid}/').get()
-    assert result == expected_data
+    assert result == {
+        'name': user_name,
+        'isDone': is_done,
+        'isSurrendered': is_surrendered
+    }
 
 
 def test_is_all_room_users_done():
@@ -289,11 +294,13 @@ def test_get_room_users():
     expected_data = {
         user_uuid: {
             'name': user_name,
-            'isDone': False
+            'isDone': False,
+            'isSurrendered': False
         },
         'test_user_uuid': {
             'name': 'test_user_name',
-            'isDone': False
+            'isDone': False,
+            'isSurrendered': False
         }
     }
     rtdb_users = get_room_users(room_id)

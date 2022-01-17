@@ -26,15 +26,16 @@ def test_record_player_progress():
     uuid = 'test-user-uuid'
     name = 'test-user-name'
     urls = ['url1', 'url2']
-    record_player_progress(room_id, uuid, name, urls)
-    expected_data = {
-        'name': name,
-        'urls': urls
-    }
+    is_surrendered = False
+    record_player_progress(room_id, uuid, name, urls, is_surrendered)
 
     target_ref = fs.collection('progress').document(str(room_id)).collection('users').document(uuid)
     doc = target_ref.get()
-    assert doc.to_dict() == expected_data
+    assert doc.to_dict() == {
+        'name': name,
+        'urls': urls,
+        'isSurrendered': is_surrendered
+    }
     target_ref.delete()
 
 
@@ -43,7 +44,8 @@ def test_cancel_player_progress():
     uuid = 'test-user-uuid'
     name = 'test-user-name'
     urls = ['url1', 'url2']
-    record_player_progress(room_id, uuid, name, urls)
+    is_surrendered = False
+    record_player_progress(room_id, uuid, name, urls, is_surrendered)
 
     cancel_player_progress(room_id, uuid)
     target_ref = fs.collection('progress').document(str(room_id)).collection('users').document(uuid)
@@ -56,17 +58,20 @@ def test_get_all_player_progresses():
     uuid = 'test-user-uuid'
     name = 'test-user-name'
     urls = ['url1', 'url2']
-    record_player_progress(room_id, uuid, name, urls)
+    is_surrendered = False
+    record_player_progress(room_id, uuid, name, urls, is_surrendered)
 
+    # surrendered player
     uuid2 = 'test-user-uuid2'
     name2 = 'test-user-name2'
-    urls2 = ['url3', 'url4']
-    record_player_progress(room_id, uuid2, name2, urls2)
+    urls2 = []
+    is_surrendered = True
+    record_player_progress(room_id, uuid2, name2, urls2, is_surrendered)
 
     player_progresses = get_all_player_progresses(room_id)
     assert player_progresses == [
-        {'uuid': uuid, 'name': name, 'urls': urls},
-        {'uuid': uuid2, 'name': name2, 'urls': urls2},
+        {'uuid': uuid, 'name': name, 'urls': urls, 'isSurrendered': False},
+        {'uuid': uuid2, 'name': name2, 'urls': urls2, 'isSurrendered': True},
     ]
     fs.collection('progress').document(str(room_id)).collection('users').document(uuid).delete()
     fs.collection('progress').document(str(room_id)).collection('users').document(uuid2).delete()
@@ -78,9 +83,10 @@ def test_record_game_result():
     name = 'test-user-name'
     urls = ['url1', 'url2']
 
+    # surrendered player
     uuid2 = 'uuid2'
     name2 = 'name2'
-    urls2 = ['url']
+    urls2 = []
 
     # rtdbのデータ準備
     ref = db.reference(f'{room_id}/')
@@ -89,11 +95,11 @@ def test_record_game_result():
         'users': {
             uuid: {
                 'name': name,
-                'isDone': False
+                'isDone': True
             },
             uuid2: {
                 'name': name2,
-                'isDone': False
+                'isDone': True
             }
         }
     })
@@ -101,8 +107,8 @@ def test_record_game_result():
     setting_article(room_id, 'goal_url', False)
 
     # player progress準備
-    record_player_progress(room_id, uuid, name, urls)
-    record_player_progress(room_id, uuid2, name2, urls2)
+    record_player_progress(room_id, uuid, name, urls, False)
+    record_player_progress(room_id, uuid2, name2, urls2, True)
 
     record_game_result(room_id)
     result = fs.collection('game-results').document(str(room_id)).get().to_dict()
@@ -112,12 +118,14 @@ def test_record_game_result():
         {
             'uuid': uuid,
             'name': name,
-            'urls': urls
+            'urls': urls,
+            'isSurrendered': False
         },
         {
             'uuid': uuid2,
             'name': name2,
-            'urls': urls2
+            'urls': urls2,
+            'isSurrendered': True
         }
     ]
 

@@ -123,18 +123,20 @@ def set_article():
         return jsonify({'message': 'set_article failed.'}), 400
 
 
+# TODO: too big!!!
 @app.route('/room/player-progress', methods=['POST'])
 def done():
     # required request params: room_id, user_uuid, is_done
     try:
         data = request.get_json()
-        room_id, urls, user_uuid, name, is_done \
-            = data.get('room_id'), data.get('urls'), data.get('uuid'), data.get('name'), data.get('is_done')
-        change_player_progress(room_id, user_uuid, is_done)
+        room_id, urls, user_uuid, name, is_done, is_surrendered \
+            = data.get('room_id'), data.get('urls'), data.get('uuid'), \
+              data.get('name'), data.get('is_done'), data.get('is_surrendered')
+        change_player_progress(room_id, user_uuid, is_done, is_surrendered)
         if is_done:
-            if not room_id or not urls or not user_uuid or not name:
+            if not room_id or urls is None or not user_uuid or not name or is_surrendered is None:
                 raise
-            record_player_progress(room_id, user_uuid, name, urls)
+            record_player_progress(room_id, user_uuid, name, urls, is_surrendered)
             room_users = get_room_users(room_id)
             if is_all_room_users_done(room_users):
                 record_game_result(room_id)
@@ -153,7 +155,7 @@ def done():
             resource=resource,
             severity='ERROR'
         )
-        return jsonify({'message': 'validation error.'}), 400
+        return jsonify({'message': 'failed done.'}), 400
 
 
 if __name__ == '__main__':
