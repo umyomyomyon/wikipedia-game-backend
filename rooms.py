@@ -18,30 +18,33 @@ from conf import MIN_ROOM_ID, MAX_ROOM_ID, RoomStatuses
 
 class RoomValidator:
     room_ref = None
+    _room_data = None
 
     def __init__(self, room_id: int):
         room_path = f'{room_id}/'
         self.room_ref = db.reference(room_path)
 
+    def _fetch_room_data(self):
+        if self._room_data is None:
+            self._room_data = self.room_ref.get()
+
     def check_room_exists(self):
-        is_room_exists = bool(self.room_ref.get())
+        self._fetch_room_data()
+        is_room_exists = bool(self._room_data)
         if not is_room_exists:
             raise RoomNotExistException
 
     def check_room_closed(self):
-        data = self.room_ref.get()
-        status = data.get('status')
+        self._fetch_room_data()
+        status = self._room_data.get('status')
         is_room_closed = status == RoomStatuses.ENDED
         if is_room_closed:
             raise RoomAlreadyClosedException
 
-
-def check_room_closed(room_id: int):
-    ref = db.reference(f'{room_id}/')
-    data = ref.get()
-    status = data.get('status')
-    is_room_closed = status == RoomStatuses.ENDED
-    return is_room_closed
+    @property
+    def room_data(self):
+        self._fetch_room_data()
+        return self._room_data
 
 
 def create_room_id():
@@ -110,9 +113,19 @@ def change_room_status(room_id: int, user_uuid: str, start=True, force_change=Fa
     })
 
 
-def _destroy_room(room_id: int):
+def _destroy_room(room_id: int, user_uuid: str = None, force_destroy=True):
+    if force_destroy:
+        # TODO: テスト環境でだけforce_destroyが許可されるようにしたい
+        pass
     rv = RoomValidator(room_id)
     rv.check_room_exists()
+
+    if not force_destroy:
+        room_data = rv.room_data
+        host = room_data.get('host')
+        if user_uuid != host:
+            raise NotHostException
+
     ref = rv.room_ref
     ref.delete()
 

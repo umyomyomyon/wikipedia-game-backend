@@ -36,15 +36,15 @@ def test_init_room():
 def test_destroy_room():
     room_id = 12345
     db_path = f'{room_id}/'
-    _destroy_room(room_id)
+    _destroy_room(room_id, force_destroy=True)
     ref = db.reference(db_path)
     assert not bool(ref.get())
 
 
-def test_destroy_room_failed():
+def test_destroy_room_not_exists():
     with pytest.raises(RoomNotExistException):
         room_id = 22345
-        _destroy_room(room_id)
+        _destroy_room(room_id, force_destroy=True)
 
 
 def room_decorator(room_id):
@@ -56,7 +56,7 @@ def room_decorator(room_id):
         def _wrapper(*args, **kwargs):
             init_room(_room_id, user_uuid, user_name)
             f(*args, **kwargs)
-            _destroy_room(_room_id)
+            _destroy_room(_room_id, force_destroy=True)
 
         return _wrapper
 

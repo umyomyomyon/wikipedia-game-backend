@@ -131,4 +131,4 @@ def test_record_game_result():
 
     fs.collection('game-results').document(str(room_id)).delete()
     delete_all_document_in_collection(fs.collection('progress').document(str(room_id)).collection('users'))
-    _destroy_room(room_id)
+    _destroy_room(room_id, force_destroy=True)
